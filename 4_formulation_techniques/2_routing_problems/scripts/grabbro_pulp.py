@@ -16,26 +16,38 @@ d = {('H', 'S1'): 14.3, ('H', 'S2'): 6.8, ('H', 'S3'): 4.7, ('H', 'S4'): 9.5,
 
 c = 0.30
 
-# TODO: complete this formulation
 x_keys = set(d.keys())
+y_keys = set(p.keys())
+z_keys = {i for i in I if i != 'H'}
 
 # Define the model
 mdl = pulp.LpProblem('grabbro', sense=pulp.LpMinimize)
 
 # Add variables
-x = pulp.LpVariable.dicts(indexs=x_keys, cat=pulp.LpBinary, name='x')
+x = pulp.LpVariable.dicts(indices=x_keys, cat=pulp.LpBinary, name='x')
+y = pulp.LpVariable.dicts(indices=y_keys, cat=pulp.LpBinary, name='y')
+z = pulp.LpVariable.dicts(indices=z_keys, cat=pulp.LpBinary, name='z')
 
 # Add Constraints
 mdl.addConstraint(sum(x.get(('H', j), 0) for j in I) == 1, name='c1')
 mdl.addConstraint(sum(x.get((i, 'H'), 0) for i in I) == 1, name='c2')
 for l in I:
     mdl.addConstraint(sum(x.get((i, l), 0) for i in I) == sum(x.get((l, j), 0) for j in I), name=f'c3_{l}')
+for k in K:
+    mdl.addConstraint(pulp.lpSum(y[i, l] for (i, l) in y_keys if l == k) == 1, name=f'c4_{k}')
 
+M = len(K)
+for j in I:
+    if j == 'H':
+        continue
+    mdl.addConstraint(z[j] <= pulp.lpSum(x[i, l] for (i, l) in x_keys if l == j), name=f'c5_{j}')
+    mdl.addConstraint(M * z[j] >= pulp.lpSum(y[i, k] for (i, k) in y_keys if i == j), name=f'c6_{j}')
 # OBS: Sub-tour elimination constraints are required if the underling graph has cycles.
 
 # Set the objective function
 transit_distance = sum(d[i, j] * x[i, j] for i, j in x_keys)
-mdl.setObjective(c * transit_distance)
+purchasing_cost = pulp.lpSum(p[i, k] * y[i, k] for (i, k) in y_keys)
+mdl.setObjective(c * transit_distance + purchasing_cost)
 
 # Optimize
 mdl.solve()
@@ -46,7 +58,9 @@ status = pulp.LpStatus[status_code]
 if status == 'Optimal':
     print(f'Optimal solution found!')
     x_sol = {key: v.value() for key, v in x.items() if v.value() > 0.5}
+    y_sol = {key: v.value() for key, v in y.items() if v.value() > 0.5}
     print(f'Route: {x_sol}')
+    print(f'Purchasing: {y_sol}')
     print(f'Transit Distance: {transit_distance.value()}')
     print(f'Transit Cost: {c * transit_distance.value()}')
 else:
