@@ -39,3 +39,39 @@ In the next section, we will study multi-period problems.
 [back]: ../1_network_flow_problems/README.md
 [next]: ../3_multi_period_problems/README.md
 [help]: ../../0_help/README.md
+
+
+## Luiz's questions and observations
+
+**Remark**: I guess the main problem regarding sub-tours is not the cycles, but the disjunction between the moves, 
+which in practice doesn't make any sense, because the salesperson would need to teleport. 
+
+1. I've been thinking about a possible alternative to the DFJ constraints, which hopefully would do the same job 
+(prevent sub-tours) but as a slightly different set of constraints: for each subset S of nodes (except unitary sets 
+   and the sets containing all the nodes to be visited), we add the constraint \sum_ij x_ij >= 1, where the 
+   summation is over origin nodes "i" in the set S and destination nodes "j" in the complement of S. Intuitively, this seems to prevent us of having disconnected cycles. 
+
+These constraints can be used in question 2) without removing the solution which takes both edges C8 -> C9 and C9 -> C8.
+
+2. Let's say we have one more city (call it "City 9", C9 for short) which is a remote city, that is, either there is 
+just one edge leading to C9, let's say C8 -> C9 and C9 -> C8, or there are more edges but very expensive ones. This way, since preventing sub-tours through DFJ or MTZ in particular avoids the salesman to take both edges C8 -> C9 and C9 -> C8, we could have an infeasible model or a not optimal solution in practice, i.e., it would probably be better (or necessary) to indeed take both edges C8 -> C9 and C9 -> C8. What should we do in this case?
+
+   **Answer:** there are a few options: 
+
+
+
+2. I've been thinking about a possible alternative to the DFJ constraints, which hopefully would do the same job 
+(prevent sub-tours) but as a slightly different set of constraints: for each subset S of nodes (except unitary sets and the sets containing all the nodes to be visited), we add the constraint \sum_ij x_ij >= 1, where the summation is over origin nodes "i" in the set S and destination nodes "j" in the complement of S. Intuitively, this seems to prevent us of having disconnected cycles.
+These constraints could be used in question 1) without removing the solution which takes both edges C8 -> C9 and C9 -> C8.
+
+3. I have another formulation to propose (for the salesman problem): let's define x_ij as the number of times (integer, non-negative) the salesman takes the edge from node "i" to node "j" (it was binary previously, indicating that it would be at most one. Now I'm proposing that we can take the same edge more than one time). The idea is to allow the salesman to visit the same node and take the same edge more than one time. The flow balance constraint remains the same, and the constraint to ensure the salesman will visit the necessary nodes would be: \sum_j x_ij >= 1 for each node "i", i.e., it departs from each node (that is has to visit) at least one.
+Now, the sub-tour elimination constraints could be those presented in 2), instead of the other DFJ.
+
+4. In case our network has at least one node that the salesman don't necessarily need to visit, say City 10 (C10), adding DFJ constraints for ALL subsets (except unitary ones and the whole set of nodes) would remove those feasible solutions that don't visit C10 (because moving, for example, in the order C1, C2, C3, ..., C7, C8, C1 is a indeed a cycle, but it's a special cycle we don't want to remove).
+In this case, I guess the solution is to add the DFJ constraints to all subsets of nodes, except those unitary, and also except those subsets that contain all the nodes to be visited.
+
+
+
+
+
+
